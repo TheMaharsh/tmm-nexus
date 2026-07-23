@@ -1,19 +1,24 @@
 import asyncio
 
-from app.scraper.google_maps import GoogleMapsScraper
+from app.lead_engine.providers.google_maps import GoogleMapsProvider
 
 
 async def main():
 
-    scraper = GoogleMapsScraper()
+    provider = GoogleMapsProvider()
 
-    businesses = await scraper.search(
+    businesses = await provider.search(
         category="Dentists",
         location="Vadodara",
-        max_results=10,
+        max_results=20,
     )
 
-    print(len(businesses))
+    print("\nRESULTS:")
+    
+    for business in businesses:
+        print(
+            business.business_name
+        )
 
 
 if __name__ == "__main__":
