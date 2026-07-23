@@ -1,21 +1,29 @@
+version: "3.9"
+
 services:
   postgres:
-    image: postgres:16-alpine
-    container_name: tmm-nexus-postgres
+    image: postgres:16
+
+    container_name: tmm_postgres
+
     restart: unless-stopped
+
     environment:
+      POSTGRES_DB: tmm_nexus
       POSTGRES_USER: tmm
       POSTGRES_PASSWORD: tmm_secret
-      POSTGRES_DB: tmm_nexus
+
     ports:
       - "5432:5432"
+
     volumes:
-      - tmm_nexus_pgdata:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U tmm -d tmm_nexus"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
 volumes:
-  tmm_nexus_pgdata:
+  postgres_data:
