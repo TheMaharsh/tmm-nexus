@@ -13,3 +13,8 @@ class Organization(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     users: Mapped[list["User"]] = relationship("User", back_populates="organization")
     roles: Mapped[list["Role"]] = relationship("Role", back_populates="organization")
     leads: Mapped[list["Lead"]] = relationship("Lead", back_populates="organization")
+    scrape_jobs: Mapped[list["ScrapeJob"]] = relationship(
+    "ScrapeJob",
+    back_populates="organization",
+    cascade="all, delete-orphan",
+)

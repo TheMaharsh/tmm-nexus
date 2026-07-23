@@ -12,6 +12,13 @@ class LeadStatus(str, enum.Enum):
     LOST = "lost"
     ARCHIVED = "archived"
 
+class ScrapeJobStatus(str, enum.Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"   
+
 
 class Permission(str, enum.Enum):
     LEADS_READ = "leads:read"

@@ -32,6 +32,10 @@ class User(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     organization: Mapped["Organization"] = relationship("Organization", back_populates="users")
     role: Mapped["Role"] = relationship("Role", back_populates="users")
     owned_leads: Mapped[list["Lead"]] = relationship("Lead", back_populates="owner")
+    scrape_jobs: Mapped[list["ScrapeJob"]] = relationship(
+    "ScrapeJob",
+    back_populates="created_by",
+)
     refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
         "RefreshToken",
         back_populates="user",
