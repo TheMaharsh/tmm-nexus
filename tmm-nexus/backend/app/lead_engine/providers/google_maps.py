@@ -1,9 +1,11 @@
 from playwright.async_api import Page
 
 from app.lead_engine.collector import BusinessCollector
+from app.lead_engine.extractor import BusinessExtractor
 from app.lead_engine.models import BusinessData
 from app.lead_engine.parser import BusinessParser
 from app.lead_engine.providers.base import LeadProvider
+
 from app.scraper.browser import BrowserManager
 from app.scraper.locators import GoogleMapsLocators
 from app.scraper.scrolling import GoogleMapsScroller
@@ -40,15 +42,45 @@ class GoogleMapsProvider(LeadProvider):
                 location,
             )
 
+            await page.screenshot(
+                path="after_search.png"
+            )
+
             print("Waiting for results...")
 
             results_feed = page.locator(
                 GoogleMapsLocators.RESULTS_FEED
             )
 
-            await results_feed.wait_for(
-                timeout=20000
-            )
+            try:
+                await results_feed.wait_for(
+                    timeout=20000
+                )
+
+            except Exception:
+
+                print(
+                    "Feed not found, checking cards..."
+                )
+
+                cards = page.locator(
+                    GoogleMapsLocators.RESULT_CARD
+                )
+
+                count = await cards.count()
+
+                if count == 0:
+                    await page.screenshot(
+                        path="debug_google_maps.png"
+                    )
+
+                    raise Exception(
+                        "Google Maps results not loaded"
+                    )
+
+                print(
+                    f"Fallback found {count} cards"
+                )
 
             cards = page.locator(
                 GoogleMapsLocators.RESULT_CARD
@@ -73,6 +105,29 @@ class GoogleMapsProvider(LeadProvider):
                 f"Collected {len(raw_cards)} cards"
             )
 
+            extractor = BusinessExtractor(page)
+
+            for card in raw_cards[:3]:
+
+                opened = await extractor.open_business(
+                    card
+                )
+
+                if opened:
+                    detail_text = await extractor.get_detail_text()
+
+                    print(
+                        "\n--- BUSINESS DETAIL ---"
+                    )
+
+                    print(
+                        detail_text[:1000]
+                    )
+
+                    print(
+                        "-----------------------"
+                    )
+
             parser = BusinessParser()
 
             businesses: list[BusinessData] = []
@@ -86,13 +141,16 @@ class GoogleMapsProvider(LeadProvider):
                 )
 
                 if business:
-                    businesses.append(business)
+                    businesses.append(
+                        business
+                    )
 
             print(
                 f"Parsed {len(businesses)} businesses"
             )
 
             return businesses
+
 
     async def _search(
         self,
