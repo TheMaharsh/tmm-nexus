@@ -2,6 +2,7 @@ from playwright.async_api import Page
 
 from app.lead_engine.collector import BusinessCollector
 from app.lead_engine.models import BusinessData
+from app.lead_engine.parser import BusinessParser
 from app.lead_engine.providers.base import LeadProvider
 from app.scraper.browser import BrowserManager
 from app.scraper.locators import GoogleMapsLocators
@@ -60,18 +61,35 @@ class GoogleMapsProvider(LeadProvider):
                 max_results,
             )
 
-            print("Collecting businesses...")
+            print("Collecting cards...")
 
             collector = BusinessCollector(page)
 
-            businesses = await collector.collect_visible(
+            raw_cards = await collector.collect_visible(
                 cards,
-                category,
-                location,
             )
 
             print(
-                f"Collected {len(businesses)} businesses"
+                f"Collected {len(raw_cards)} cards"
+            )
+
+            parser = BusinessParser()
+
+            businesses: list[BusinessData] = []
+
+            for card in raw_cards:
+
+                business = await parser.parse_card(
+                    card,
+                    category,
+                    location,
+                )
+
+                if business:
+                    businesses.append(business)
+
+            print(
+                f"Parsed {len(businesses)} businesses"
             )
 
             return businesses

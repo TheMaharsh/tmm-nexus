@@ -1,27 +1,21 @@
 from playwright.async_api import Locator, Page
 
-from app.lead_engine.models import BusinessData
-
 
 class BusinessCollector:
 
     def __init__(self, page: Page):
         self.page = page
-        self.seen: set[str] = set()
 
     async def collect_visible(
         self,
         cards: Locator,
-        category: str,
-        location: str,
-    ) -> list[BusinessData]:
+    ) -> list[Locator]:
 
-        businesses: list[BusinessData] = []
+        collected: list[Locator] = []
 
         count = await cards.count()
 
         for index in range(count):
-
             card = cards.nth(index)
 
             try:
@@ -30,31 +24,7 @@ class BusinessCollector:
             except Exception:
                 continue
 
-            if not text:
-                continue
+            if text.strip():
+                collected.append(card)
 
-            lines = [
-                line.strip()
-                for line in text.split("\n")
-                if line.strip()
-            ]
-
-            if not lines:
-                continue
-
-            name = lines[0]
-
-            if name in self.seen:
-                continue
-
-            self.seen.add(name)
-
-            businesses.append(
-                BusinessData(
-                    business_name=name,
-                    category=category,
-                    city=location,
-                )
-            )
-
-        return businesses
+        return collected
