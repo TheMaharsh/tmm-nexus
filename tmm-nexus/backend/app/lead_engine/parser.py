@@ -20,6 +20,7 @@ class BusinessParser:
         except Exception:
             return None
 
+
         if not text:
             return None
 
@@ -29,6 +30,7 @@ class BusinessParser:
             for line in text.split("\n")
             if line.strip()
         ]
+
 
         if not lines:
             return None
@@ -44,6 +46,8 @@ class BusinessParser:
         phone = None
         address = None
 
+
+        # Rating + reviews
 
         rating_match = re.search(
             r"(\d\.\d)\(([\d,]+)\)",
@@ -62,20 +66,37 @@ class BusinessParser:
             )
 
 
+        # Phone extraction
+        # Handles:
+        # 085115 80198
+        # 08511580198
+        # +91 85115 80198
+
         phone_match = re.search(
-            r"\b\d{5}\s?\d{5}\b",
+            r"(?:\+91[\s-]?)?\d{5}[\s-]?\d{5}",
             full_text,
         )
 
         if phone_match:
-            phone = phone_match.group(0)
 
+            phone = (
+                phone_match.group(0)
+                .strip()
+            )
+
+
+        # Address
 
         for line in lines:
 
-            if "·" in line and len(line) > 20:
-                address = line
-                break
+            if "·" in line:
+
+                parts = line.split("·")
+
+                if len(parts) >= 2:
+
+                    address = parts[-1].strip()
+                    break
 
 
         return BusinessData(
