@@ -19,7 +19,11 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def create_access_token(subject: UUID, organization_id: UUID, role: str) -> str:
     settings = get_settings()
-    expire = datetime.now(UTC) + timedelta(minutes=settings.access_token_expire_minutes)
+
+    expire = datetime.now(UTC) + timedelta(
+        minutes=settings.access_token_expire_minutes
+    )
+
     payload = {
         "sub": str(subject),
         "org": str(organization_id),
@@ -27,9 +31,37 @@ def create_access_token(subject: UUID, organization_id: UUID, role: str) -> str:
         "type": "access",
         "exp": expire,
     }
-    return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
+
+    token = jwt.encode(
+        payload,
+        settings.secret_key,
+        algorithm=settings.algorithm,
+    )
+
+    print("CREATED TOKEN:", token)
+    print("SECRET KEY:", settings.secret_key)
+    print("ALGORITHM:", settings.algorithm)
+
+    return token
 
 
 def decode_access_token(token: str) -> dict:
     settings = get_settings()
-    return jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+
+    print("TOKEN RECEIVED:", token)
+    print("SECRET KEY:", settings.secret_key)
+    print("ALGORITHM:", settings.algorithm)
+
+    try:
+        payload = jwt.decode(
+            token,
+            settings.secret_key,
+            algorithms=[settings.algorithm],
+        )
+
+        print("DECODED PAYLOAD:", payload)
+        return payload
+
+    except JWTError as e:
+        print("JWT ERROR:", repr(e))
+        raise

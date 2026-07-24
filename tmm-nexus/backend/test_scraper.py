@@ -8,8 +8,8 @@ async def main():
     provider = GoogleMapsProvider()
 
     businesses = await provider.search(
-        category="Dentists",
-        location="Vadodara",
+        category="dentist",
+        location="vadodara",
         max_results=20,
     )
 

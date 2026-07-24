@@ -1,7 +1,8 @@
 import uuid
 from typing import Annotated
 
-from fastapi import Depends, Header
+from fastapi import Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError
 from sqlalchemy.orm import Session, joinedload
 
@@ -12,35 +13,60 @@ from app.models.enums import Permission
 from app.models.user import User
 from app.services.auth_service import AuthService, user_has_permission
 
-DbSession = Annotated[Session, Depends(get_db)]
+
+DbSession = Annotated[
+    Session,
+    Depends(get_db),
+]
 
 
-def get_auth_service(db: DbSession) -> AuthService:
+security = HTTPBearer()
+
+
+def get_auth_service(
+    db: DbSession,
+) -> AuthService:
     return AuthService(db)
 
 
-AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
+AuthServiceDep = Annotated[
+    AuthService,
+    Depends(get_auth_service),
+]
 
 
 def get_current_user(
     db: DbSession,
-    authorization: Annotated[str | None, Header()] = None,
+    credentials: Annotated[
+        HTTPAuthorizationCredentials,
+        Depends(security),
+    ],
 ) -> User:
-    if not authorization or not authorization.startswith("Bearer "):
-        raise AuthenticationError("Missing or invalid authorization header")
 
-    token = authorization.removeprefix("Bearer ").strip()
+    token = credentials.credentials
+
     try:
         payload = decode_access_token(token)
+
     except JWTError as exc:
-        raise AuthenticationError("Invalid or expired token") from exc
+        raise AuthenticationError(
+            "Invalid or expired token"
+        ) from exc
+
 
     if payload.get("type") != "access":
-        raise AuthenticationError("Invalid token type")
+        raise AuthenticationError(
+            "Invalid token type"
+        )
+
 
     user_id = payload.get("sub")
+
     if not user_id:
-        raise AuthenticationError("Invalid token payload")
+        raise AuthenticationError(
+            "Invalid token payload"
+        )
+
 
     user = (
         db.query(User)
@@ -48,22 +74,43 @@ def get_current_user(
             joinedload(User.organization),
             joinedload(User.role),
         )
-        .filter(User.id == uuid.UUID(user_id))
+        .filter(
+            User.id == uuid.UUID(user_id)
+        )
         .first()
     )
+
+
     if not user or not user.is_active:
-        raise AuthenticationError("User not found or inactive")
+        raise AuthenticationError(
+            "User not found or inactive"
+        )
+
 
     return user
 
 
-CurrentUser = Annotated[User, Depends(get_current_user)]
+CurrentUser = Annotated[
+    User,
+    Depends(get_current_user),
+]
 
 
-def require_permission(permission: Permission):
-    def checker(user: CurrentUser) -> User:
-        if not user_has_permission(user, permission):
+def require_permission(
+    permission: Permission,
+):
+
+    def checker(
+        user: CurrentUser,
+    ) -> User:
+
+        if not user_has_permission(
+            user,
+            permission,
+        ):
             raise AuthorizationError()
+
         return user
+
 
     return checker

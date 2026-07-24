@@ -60,13 +60,18 @@ class LeadImportService:
 
                 status=LeadStatus.NEW,
             )
-
+            print("=" * 60)
+            print("ADDING LEAD")
+            print("Business:", lead.business_name)
+            print("Status:", lead.status)
+            print("Type:", type(lead.status))
+            print("=" * 60)
 
             self.db.add(lead)
 
             saved_leads.append(lead)
 
-
+        print("COMMITTING", len(saved_leads), "LEADS")
         self.db.commit()
 
 
