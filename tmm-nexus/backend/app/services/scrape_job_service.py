@@ -13,8 +13,13 @@ from app.schemas.scrape_job import (
 
 
 class ScrapeJobService:
-    def __init__(self, db: Session) -> None:
+
+    def __init__(
+        self,
+        db: Session,
+    ) -> None:
         self.db = db
+
 
     def create(
         self,
@@ -22,6 +27,7 @@ class ScrapeJobService:
         created_by_id: UUID | None,
         payload: CreateScrapeJobRequest,
     ) -> ScrapeJob:
+
         job = ScrapeJob(
             organization_id=organization_id,
             created_by_id=created_by_id,
@@ -37,17 +43,27 @@ class ScrapeJobService:
 
         return job
 
-    def get(self, job_id: UUID) -> ScrapeJob:
+
+    def get(
+        self,
+        job_id: UUID,
+    ) -> ScrapeJob:
+
         job = (
             self.db.query(ScrapeJob)
-            .filter(ScrapeJob.id == job_id)
+            .filter(
+                ScrapeJob.id == job_id
+            )
             .first()
         )
 
         if job is None:
-            raise NotFoundError("Scrape job not found")
+            raise NotFoundError(
+                "Scrape job not found"
+            )
 
         return job
+
 
     def list(
         self,
@@ -55,10 +71,15 @@ class ScrapeJobService:
         skip: int = 0,
         limit: int = 50,
     ) -> ScrapeJobListResponse:
+
         query = (
             self.db.query(ScrapeJob)
-            .filter(ScrapeJob.organization_id == organization_id)
-            .order_by(ScrapeJob.created_at.desc())
+            .filter(
+                ScrapeJob.organization_id == organization_id
+            )
+            .order_by(
+                ScrapeJob.created_at.desc()
+            )
         )
 
         total = query.count()
@@ -74,6 +95,7 @@ class ScrapeJobService:
             total=total,
         )
 
+
     def update(
         self,
         job_id: UUID,
@@ -82,17 +104,28 @@ class ScrapeJobService:
 
         job = self.get(job_id)
 
-        update_data = payload.model_dump(exclude_unset=True)
+        update_data = payload.model_dump(
+            exclude_unset=True
+        )
 
         for field, value in update_data.items():
-            setattr(job, field, value)
+            setattr(
+                job,
+                field,
+                value,
+            )
 
         self.db.commit()
         self.db.refresh(job)
 
         return job
 
-    def start(self, job_id: UUID) -> ScrapeJob:
+
+    def start(
+        self,
+        job_id: UUID,
+    ) -> ScrapeJob:
+
         job = self.get(job_id)
 
         job.status = ScrapeJobStatus.RUNNING
@@ -102,7 +135,12 @@ class ScrapeJobService:
 
         return job
 
-    def complete(self, job_id: UUID) -> ScrapeJob:
+
+    def complete(
+        self,
+        job_id: UUID,
+    ) -> ScrapeJob:
+
         job = self.get(job_id)
 
         job.status = ScrapeJobStatus.COMPLETED
@@ -112,11 +150,13 @@ class ScrapeJobService:
 
         return job
 
+
     def fail(
         self,
         job_id: UUID,
         error: str,
     ) -> ScrapeJob:
+
         job = self.get(job_id)
 
         job.status = ScrapeJobStatus.FAILED
@@ -127,7 +167,12 @@ class ScrapeJobService:
 
         return job
 
-    def cancel(self, job_id: UUID) -> ScrapeJob:
+
+    def cancel(
+        self,
+        job_id: UUID,
+    ) -> ScrapeJob:
+
         job = self.get(job_id)
 
         job.status = ScrapeJobStatus.CANCELLED
@@ -137,21 +182,23 @@ class ScrapeJobService:
 
         return job
 
-   def update_progress(
-    self,
-    job_id: UUID,
-    *,
-    found: int = 0,
-    saved: int = 0,
-    duplicates: int = 0,
-) -> ScrapeJob:
-    job = self.get(job_id)
 
-    job.total_found += found
-    job.total_saved += saved
-    job.total_duplicates += duplicates
+    def update_progress(
+        self,
+        job_id: UUID,
+        *,
+        found: int = 0,
+        saved: int = 0,
+        duplicates: int = 0,
+    ) -> ScrapeJob:
 
-    self.db.commit()
-    self.db.refresh(job)
+        job = self.get(job_id)
 
-    return job
+        job.total_found += found
+        job.total_saved += saved
+        job.total_duplicates += duplicates
+
+        self.db.commit()
+        self.db.refresh(job)
+
+        return job
