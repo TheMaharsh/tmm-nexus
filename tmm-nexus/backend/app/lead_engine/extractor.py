@@ -6,15 +6,35 @@ class BusinessExtractor:
     def __init__(self, page: Page):
         self.page = page
 
+
+    async def close_panel(self):
+
+        try:
+            close_button = self.page.locator(
+                'button[aria-label="Close"]'
+            )
+
+            if await close_button.count():
+
+                await close_button.first.click()
+
+                await self.page.wait_for_timeout(
+                    1000
+                )
+
+        except Exception:
+            pass
+
+
     async def open_business(
         self,
         card: Locator,
     ) -> bool:
-        """
-        Opens a business detail panel from a result card.
-        """
 
         try:
+
+            await self.close_panel()
+
             await card.click()
 
             await self.page.wait_for_timeout(
@@ -23,7 +43,9 @@ class BusinessExtractor:
 
             return True
 
+
         except Exception as error:
+
             print(
                 f"Failed opening business: {error}"
             )
@@ -32,17 +54,16 @@ class BusinessExtractor:
 
 
     async def get_detail_text(self) -> str:
-        """
-        Returns visible text from the
-        business detail panel.
-        """
 
         try:
-            body = self.page.locator("body")
 
-            text = await body.inner_text()
+            body = self.page.locator(
+                "body"
+            )
 
-            return text
+            return await body.inner_text()
+
 
         except Exception:
+
             return ""

@@ -36,22 +36,22 @@ class BusinessParser:
 
         name = lines[0]
 
+        full_text = " ".join(lines)
+
+
         rating = None
         review_count = None
         phone = None
         address = None
 
 
-        full_text = " ".join(lines)
-
-
-        # Rating + Reviews
         rating_match = re.search(
             r"(\d\.\d)\(([\d,]+)\)",
             full_text,
         )
 
         if rating_match:
+
             rating = float(
                 rating_match.group(1)
             )
@@ -62,7 +62,6 @@ class BusinessParser:
             )
 
 
-        # Phone number
         phone_match = re.search(
             r"\b\d{5}\s?\d{5}\b",
             full_text,
@@ -72,14 +71,9 @@ class BusinessParser:
             phone = phone_match.group(0)
 
 
-        # Address
         for line in lines:
 
-            if (
-                "·" in line
-                and not "Dentist" in line
-                and not "Clinic" in line
-            ):
+            if "·" in line and len(line) > 20:
                 address = line
                 break
 

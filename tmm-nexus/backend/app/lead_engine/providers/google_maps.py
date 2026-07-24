@@ -1,7 +1,6 @@
 from playwright.async_api import Page
 
 from app.lead_engine.collector import BusinessCollector
-from app.lead_engine.extractor import BusinessExtractor
 from app.lead_engine.models import BusinessData
 from app.lead_engine.parser import BusinessParser
 from app.lead_engine.providers.base import LeadProvider
@@ -42,58 +41,67 @@ class GoogleMapsProvider(LeadProvider):
                 location,
             )
 
-            await page.screenshot(
-                path="after_search.png"
-            )
-
-            print("Waiting for results...")
-
-            results_feed = page.locator(
-                GoogleMapsLocators.RESULTS_FEED
-            )
-
-            try:
-                await results_feed.wait_for(
-                    timeout=20000
-                )
-
-            except Exception:
-
-                print(
-                    "Feed not found, checking cards..."
-                )
-
-                cards = page.locator(
-                    GoogleMapsLocators.RESULT_CARD
-                )
-
-                count = await cards.count()
-
-                if count == 0:
-                    await page.screenshot(
-                        path="debug_google_maps.png"
-                    )
-
-                    raise Exception(
-                        "Google Maps results not loaded"
-                    )
-
-                print(
-                    f"Fallback found {count} cards"
-                )
+            print("Waiting for cards...")
 
             cards = page.locator(
                 GoogleMapsLocators.RESULT_CARD
             )
 
-            scroller = GoogleMapsScroller(page)
+            # Wait until result cards appear
+            for attempt in range(10):
 
-            await scroller.scroll_results(
-                results_feed,
-                max_results,
+                count = await cards.count()
+
+                if count > 0:
+                    print(
+                        f"Cards loaded: {count}"
+                    )
+                    break
+
+                await page.wait_for_timeout(
+                    2000
+                )
+
+            else:
+
+                await page.screenshot(
+                    path="google_maps_error.png"
+                )
+
+                raise Exception(
+                    "No Google Maps cards found"
+                )
+
+
+            results_feed = page.locator(
+                GoogleMapsLocators.RESULTS_FEED
             )
 
+
+            scroller = GoogleMapsScroller(page)
+
+            try:
+
+                await scroller.scroll_results(
+                    results_feed,
+                    max_results,
+                )
+
+            except Exception as error:
+
+                print(
+                    f"Scrolling warning: {error}"
+                )
+
+
             print("Collecting cards...")
+
+
+            # Refresh locator after scrolling
+            cards = page.locator(
+                GoogleMapsLocators.RESULT_CARD
+            )
+
 
             collector = BusinessCollector(page)
 
@@ -101,36 +109,16 @@ class GoogleMapsProvider(LeadProvider):
                 cards,
             )
 
+
             print(
                 f"Collected {len(raw_cards)} cards"
             )
 
-            extractor = BusinessExtractor(page)
-
-            for card in raw_cards[:3]:
-
-                opened = await extractor.open_business(
-                    card
-                )
-
-                if opened:
-                    detail_text = await extractor.get_detail_text()
-
-                    print(
-                        "\n--- BUSINESS DETAIL ---"
-                    )
-
-                    print(
-                        detail_text[:1000]
-                    )
-
-                    print(
-                        "-----------------------"
-                    )
 
             parser = BusinessParser()
 
             businesses: list[BusinessData] = []
+
 
             for card in raw_cards:
 
@@ -141,15 +129,19 @@ class GoogleMapsProvider(LeadProvider):
                 )
 
                 if business:
+
                     businesses.append(
                         business
                     )
+
 
             print(
                 f"Parsed {len(businesses)} businesses"
             )
 
+
             return businesses
+
 
 
     async def _search(
@@ -163,17 +155,21 @@ class GoogleMapsProvider(LeadProvider):
             GoogleMapsLocators.SEARCH_INPUT
         )
 
+
         await search_box.wait_for(
             timeout=20000
         )
+
 
         await search_box.fill(
             f"{category} {location}"
         )
 
+
         await search_box.press(
             "Enter"
         )
+
 
         await page.wait_for_timeout(
             5000
